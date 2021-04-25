@@ -37,6 +37,19 @@ pub use async_client::async_http_client;
 ///
 pub type AsyncHttpClientError = Error<reqwest::Error>;
 
+// Following redirects opens the client up to SSRF vulnerabilities,
+// so we need to make sure to only allow a limited subset.
+fn redirect_policy() -> reqwest::redirect::Policy {
+    redirect::Policy::custom(|attempt| {
+        if attempt.previous().len() > 0 {
+            attempt.error("too many redirects")
+        } else {
+            // TODO: Allow only if the difference is in www.
+            attempt.follow()
+        }
+    })
+}
+
 #[cfg(not(target_arch = "wasm32"))]
 mod blocking {
     use super::super::{HttpRequest, HttpResponse};
@@ -53,8 +66,7 @@ mod blocking {
     ///
     pub fn http_client(request: HttpRequest) -> Result<HttpResponse, Error<reqwest::Error>> {
         let client = blocking::Client::builder()
-            // Following redirects opens the client up to SSRF vulnerabilities.
-            .redirect(RedirectPolicy::none())
+            .redirect(redirect_policy())
             .build()
             .map_err(Error::Reqwest)?;
 
@@ -102,7 +114,7 @@ mod async_client {
             // Following redirects opens the client up to SSRF vulnerabilities.
             // but this is not possible to prevent on wasm targets
             #[cfg(not(target_arch = "wasm32"))]
-            let builder = builder.redirect(reqwest::redirect::Policy::none());
+            let builder = builder.redirect(redirect_policy());
 
             builder.build().map_err(Error::Reqwest)?
         };
