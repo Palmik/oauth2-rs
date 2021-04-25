@@ -41,8 +41,8 @@ pub type AsyncHttpClientError = Error<reqwest::Error>;
 // so we need to make sure to only allow a limited subset.
 fn redirect_policy() -> reqwest::redirect::Policy {
     reqwest::redirect::Policy::custom(|attempt| {
-        if attempt.previous().len() > 0 {
-            attempt.error("too many redirects")
+        if attempt.previous().len() > 2 {
+            attempt.stop()
         } else {
             // TODO: Allow only if the difference is in www.
             attempt.follow()
