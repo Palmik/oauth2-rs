@@ -1246,7 +1246,10 @@ where
         let http_response = http_client(http_request)
             .await
             .map_err(RequestTokenError::Request)?;
-        println!("!XXX TOKEN RESPONSE RAW {:?}", http_response);
+        println!(
+            "!XXX TOKEN RESPONSE RAW {:?}",
+            std::str::from_utf8(&http_response.body).unwrap()
+        );
         endpoint_response(http_response)
     }
 }
