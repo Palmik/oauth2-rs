@@ -40,7 +40,7 @@ pub type AsyncHttpClientError = Error<reqwest::Error>;
 // Following redirects opens the client up to SSRF vulnerabilities,
 // so we need to make sure to only allow a limited subset.
 fn redirect_policy() -> reqwest::redirect::Policy {
-    redirect::Policy::custom(|attempt| {
+    reqwest::redirect::Policy::custom(|attempt| {
         if attempt.previous().len() > 0 {
             attempt.error("too many redirects")
         } else {
@@ -53,11 +53,10 @@ fn redirect_policy() -> reqwest::redirect::Policy {
 #[cfg(not(target_arch = "wasm32"))]
 mod blocking {
     use super::super::{HttpRequest, HttpResponse};
-    use super::Error;
+    use super::{redirect_policy, Error};
 
     pub use reqwest;
     use reqwest::blocking;
-    use reqwest::redirect::Policy as RedirectPolicy;
 
     use std::io::Read;
 
@@ -98,7 +97,7 @@ mod blocking {
 
 mod async_client {
     use super::super::{HttpRequest, HttpResponse};
-    use super::Error;
+    use super::{redirect_policy, Error};
 
     pub use reqwest;
 
